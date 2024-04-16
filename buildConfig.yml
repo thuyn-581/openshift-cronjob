@@ -14,7 +14,7 @@ spec:
   source:
     type: Git
     git:
-      ref: master
+      ref: main
       uri: https://github.com/thuyn-581/openshift-cronjob.git
   strategy:
     type: Source

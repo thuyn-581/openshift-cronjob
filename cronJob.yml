@@ -1,34 +1,34 @@
----
-apiVersion: batch/v1beta1
-kind: CronJob
+apiVersion: v1
+kind: Template
 metadata:
-  labels:
-    app: ocm-update-cron
   name: ocm-update-cron
-spec:
-  concurrencyPolicy: Replace
-  failedJobsHistoryLimit: 1
-  jobTemplate:
-    metadata:
-      annotations:
-        alpha.image.policy.openshift.io/resolve-names: '*'
-    spec:
-      template:
-        spec:
-          containers:
-          - env:
-            - name: NAMESPACE
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.namespace
-            - name: HOST
-              value: https://open.shift.host:port
-            image: ocm-update-cron/ocm-update-cron:1.0
-            imagePullPolicy: Always
-            name: ocm-update-cron
-          serviceAccountName: automation-service-account
-          restartPolicy: Never
-  schedule: "*/5 * * * *"
-  startingDeadlineSeconds: 600
-  successfulJobsHistoryLimit: 3
-  suspend: false
+objects:
+- apiVersion: batch/v1beta1
+  kind: CronJob
+  metadata:
+    labels:
+      app: ocm-update-cron
+    name: ocm-update-cron
+  spec:
+    concurrencyPolicy: Replace
+    failedJobsHistoryLimit: 1
+    jobTemplate:
+      metadata:
+        annotations:
+          alpha.image.policy.openshift.io/resolve-names: '*'
+      spec:
+        template:
+          spec:
+            containers:
+            - env:
+              - name: HOST
+                value: "${API_URL}"
+              image: ocm-update-cron/ocm-update-cron:1.0
+              imagePullPolicy: Always
+              name: ocm-update-cron
+            serviceAccountName: automation-service-account
+            restartPolicy: Never
+    schedule: "*/5 * * * *"
+    startingDeadlineSeconds: 600
+    successfulJobsHistoryLimit: 3
+    suspend: false

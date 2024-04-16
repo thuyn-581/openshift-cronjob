@@ -9,7 +9,7 @@ spec:
   output:
     to:
       kind: ImageStreamTag
-      name: ocm-update-cron:1.0
+      name: ocm-update-cron:latest
   runPolicy: Serial
   source:
     type: Git

@@ -70,7 +70,7 @@ def archive_ocm_stale_clsuters(bearer_token):
         "Authorization": f"Bearer {bearer_token}",
         'Content-Type': 'application/json'
     }
-    request_body = '{ "status": "Archived" }'
+    request_body = '{ "status": "Stale" }'
     res = requests.get(url, headers=headers).json()
     if len(res["items"]) > 0:
         requests.patch(url, headers=headers, data=request_body).json()

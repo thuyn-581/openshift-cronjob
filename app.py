@@ -73,8 +73,9 @@ def archive_ocm_stale_clsuters(bearer_token):
     request_body = '{ "status": "Archived" }'
     res = requests.get(url, headers=headers).json()
     if len(res["items"]) > 0:
-        res = requests.patch(url, headers=headers, data=request_body).json()
-        print(res)
+        requests.patch(url, headers=headers, data=request_body).json()
+        
+    print(len(res["items"]))
 
 
 def get_ocm_subscription(clusterID,bearer_token):

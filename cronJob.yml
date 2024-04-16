@@ -18,7 +18,7 @@
             - env:
               - name: HOST
                 value: "${API_URL}"
-              image: ocm-update-cron/ocm-update-cron:1.0
+              image: default/ocm-update-cron:1.0
               imagePullPolicy: Always
               name: ocm-update-cron
             serviceAccountName: automation-service-account

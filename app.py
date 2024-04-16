@@ -137,7 +137,8 @@ def main():
     access_token = get_ocm_token()
 
     client = authenticate(hub_api, hub_token)
-    update_managedclusters(client, access_token)
+    # update_managedclusters(client, access_token)
+    archive_ocm_stale_clsuters(access_token)
 
 
 if __name__ == "__main__":

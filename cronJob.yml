@@ -3,8 +3,8 @@ apiVersion: batch/v1beta1
 kind: CronJob
 metadata:
   labels:
-    app: py-cron
-  name: py-cron
+    app: ocm-update-cron
+  name: ocm-update-cron
 spec:
   concurrencyPolicy: Replace
   failedJobsHistoryLimit: 1
@@ -23,10 +23,10 @@ spec:
                   fieldPath: metadata.namespace
             - name: HOST
               value: https://open.shift.host:port
-            image: py-cron/py-cron:1.0
+            image: ocm-update-cron/ocm-update-cron:1.0
             imagePullPolicy: Always
-            name: py-cron
-          serviceAccountName: py-cron
+            name: ocm-update-cron
+          serviceAccountName: automation-service-account
           restartPolicy: Never
   schedule: "*/5 * * * *"
   startingDeadlineSeconds: 600

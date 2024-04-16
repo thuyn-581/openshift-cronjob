@@ -2,8 +2,11 @@
 
 import os
 import sys
+import json
+import requests
 import kubernetes
 from openshift.dynamic import DynamicClient, exceptions
+from kubernetes.client import ApiClient
 
 
 def authenticate(host, key):
@@ -12,6 +15,7 @@ def authenticate(host, key):
 
     k8s_client.host = host
     k8s_client.api_key = key
+    k8s_client.verify_ssl = False
 
     setattr(k8s_client,
             'api_key',
@@ -21,34 +25,86 @@ def authenticate(host, key):
     return DynamicClient(kubernetes.client.ApiClient(k8s_client))
 
 
-def get_pods(client, project):
-    """List the pods in an OpenShift project."""
+def update_managedclusters(client,bearer_token):
+    """List active managed clusters."""
+    infra_id=''
+    cluster_id=''
+    archive_ocm_stale_clsuters(bearer_token)
 
     try:
-        v1_pods = client.resources.get(
-            api_version='v1',
-            kind='Pod')
-        pods = v1_pods.get(namespace=project)
+        v1_spokes = client.resources.get(
+            api_version='cluster.open-cluster-management.io/v1',
+            kind='ManagedCluster')
+        spokes = v1_spokes.get()["items"]
+
+        for item in spokes:
+            if item["metadata"]["labels"]["vendor"] == "OpenShift":
+                for claim in item["status"]["clusterClaims"]:  
+                    if claim["name"] == "infrastructure.openshift.io" :
+                        infra_id = json.loads(claim["value"])["infraName"]
+                    if claim["name"] == "id.openshift.io" :
+                        cluster_id = claim["value"]
+                if infra_id != '' and cluster_id != '':
+                    update_ocm_displayName(cluster_id, infra_id, bearer_token)
+    
     except Exception as e:
-        print("Error getting pods for namespace {}: {}\n".format(project, e))
+        print("Error")
         sys.exit(1)
 
-    return pods
+
+def update_ocm_displayName(clusterID, infraID, bearer_token):
+    subID = get_ocm_subscription(clusterID,bearer_token)
+    url = "https://api.openshift.com/api/accounts_mgmt/v1/subscriptions/" + subID
+    headers = {
+        "Authorization": f"Bearer {bearer_token}",
+        'Content-Type': 'application/json'
+    }
+    request_body = '{ "display_name": "0_'+ infraID +'" }'
+    res = requests.patch(url, headers=headers, data=request_body).json()
+    print(res)
 
 
-def check_namespace(client, namespace):
-    """Check that the namespace exists."""
+def archive_ocm_stale_clsuters(bearer_token):
+    url = "https://api.openshift.com/api/accounts_mgmt/v1/subscriptions?search=creator.id%3D'1sDC9c5XHIV6FykHhxfxNJKkhTh'%20and%20status%3D'Stale'"
+    headers = {
+        "Authorization": f"Bearer {bearer_token}",
+        'Content-Type': 'application/json'
+    }
+    request_body = '{ "status": "Archived" }'
+    res = requests.get(url, headers=headers).json()
+    if len(res["items"]) > 0:
+        res = requests.patch(url, headers=headers, data=request_body).json()
+        print(res)
 
-    try:
-        v1_namespace = client.resources.get(api_version='v1', kind='Namespace')
-        v1_namespace.get(name=namespace)
-    except exceptions.NotFoundError:
-        return False
-    except Exception as e:
-        print("Error checking namespace {}: {}\n".format(namespace, e))
-        sys.exit(1)
 
-    return True
+def get_ocm_subscription(clusterID,bearer_token):
+    subID = ''
+    url = "https://api.openshift.com/api/accounts_mgmt/v1/subscriptions?search=creator.id%3D'1sDC9c5XHIV6FykHhxfxNJKkhTh'%20and%20status%3D'Active'"
+    headers = {
+        "Authorization": f"Bearer {bearer_token}",
+        'Content-Type': 'application/json'
+    }
+    res = requests.get(url, headers=headers).json()
+    for item in res["items"]:
+        if item["external_cluster_id"] == clusterID:
+            subID = item["id"]
+            # print(item['id'])       
+    return subID
+
+
+def get_ocm_token():
+    url = "https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/token"
+    headers = {
+        'Content-Type': 'application/x-www-form-urlencoded'
+    }
+    request_body = {
+        "grant_type": "refresh_token",
+        "client_id": "cloud-services",
+        "refresh_token": get_env('OCM_TOKEN')
+    }    
+    res = requests.post(url, headers=headers, data=request_body).json()
+    # print (res["access_token"]) 
+    return res["access_token"]
 
 
 def get_env(var):
@@ -62,7 +118,7 @@ def get_env(var):
     return variable
 
 
-def get_token(file='/var/run/secrets/kubernetes.io/serviceaccount/token'):
+def get_hub_token(file='/var/run/secrets/kubernetes.io/serviceaccount/token'):
     """Get the ServiceAccount's token."""
     try:
         with open(file) as f:
@@ -76,22 +132,12 @@ def get_token(file='/var/run/secrets/kubernetes.io/serviceaccount/token'):
 
 def main():
     """Get the token from the enviroment, and query for pods."""
-    host = get_env('HOST')
-    token = get_token()
+    hub_api = get_env('HOST')
+    hub_token = get_hub_token()
+    access_token = get_ocm_token()
 
-    # The NAMESPACE env is provided by the Kuberntes DownwardAPI
-    # https://docs.okd.io/latest/dev_guide/downward_api.html
-
-    namespace = get_env('NAMESPACE')
-
-    client = authenticate(host, token)
-    if check_namespace(client, namespace):
-        pods = get_pods(client, namespace)
-    else:
-        print("Namespace {} doesn't exit".format(namespace))
-        sys.exit(1)
-
-    print(pods)
+    client = authenticate(hub_api, hub_token)
+    update_managedclusters(client, access_token)
 
 
 if __name__ == "__main__":

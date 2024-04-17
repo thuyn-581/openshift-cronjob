@@ -2,6 +2,7 @@
 
 import os
 import sys
+import re
 import json
 import requests
 import kubernetes
@@ -63,9 +64,12 @@ def update_ocm_displayName(clusterID, infraID, bearer_token):
         "Authorization": f"Bearer {bearer_token}",
         'Content-Type': 'application/json'
     }
-    request_body = '{ "display_name": "0_'+ infraID +'" }'
-    res = requests.patch(url, headers=headers, data=request_body).json()
-    print(res)
+    res = requests.get(url, headers=headers).json()
+    # print(re.match('[0-1]_+', res["display_name"]))
+    if re.match('[0-1]_+', res["display_name"]) == None:
+        request_body = '{ "display_name": "0_'+ infraID +'" }'
+        res = requests.patch(url, headers=headers, data=request_body).json()
+        print(res["display_name"])
 
 
 def archive_ocm_stale_clsuters(bearer_token):

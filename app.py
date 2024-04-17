@@ -39,13 +39,14 @@ def update_managedclusters(client,bearer_token):
 
         for item in spokes:
             if item["metadata"]["labels"]["vendor"] == "OpenShift":
-                for claim in item["status"]["clusterClaims"]:  
-                    if claim["name"] == "infrastructure.openshift.io" :
-                        infra_id = json.loads(claim["value"])["infraName"]
-                    if claim["name"] == "id.openshift.io" :
-                        cluster_id = claim["value"]
-                if infra_id != '' and cluster_id != '':
-                    update_ocm_displayName(cluster_id, infra_id, bearer_token)
+                if item["status"]["clusterClaims"] != None:
+                    for claim in item["status"]["clusterClaims"]:  
+                        if claim["name"] == "infrastructure.openshift.io" :
+                            infra_id = json.loads(claim["value"])["infraName"]
+                        if claim["name"] == "id.openshift.io" :
+                            cluster_id = claim["value"]
+                    if infra_id != '' and cluster_id != '':
+                        update_ocm_displayName(cluster_id, infra_id, bearer_token)
     
     except Exception as e:
         print("Error")

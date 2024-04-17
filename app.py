@@ -29,7 +29,7 @@ def update_managedclusters(client,bearer_token):
     """List active managed clusters."""
     infra_id=''
     cluster_id=''
-    archive_ocm_stale_clsuters(bearer_token)
+    # archive_ocm_stale_clsuters(bearer_token)
 
     try:
         v1_spokes = client.resources.get(
@@ -144,7 +144,7 @@ def main():
 
     client = authenticate(hub_api, hub_token)
     update_managedclusters(client, access_token)
-    
+
 
 if __name__ == "__main__":
     sys.exit(main())

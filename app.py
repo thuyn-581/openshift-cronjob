@@ -53,6 +53,9 @@ def update_managedclusters(client,bearer_token):
 
 
 def update_ocm_displayName(clusterID, infraID, bearer_token):
+    """Updage ocm display name."""
+    print(infraID)
+
     subID = get_ocm_subscription(clusterID,bearer_token)
     url = "https://api.openshift.com/api/accounts_mgmt/v1/subscriptions/" + subID
     headers = {
@@ -65,12 +68,14 @@ def update_ocm_displayName(clusterID, infraID, bearer_token):
 
 
 def archive_ocm_stale_clsuters(bearer_token):
+    """Archive stale clusters."""
+
     url = "https://api.openshift.com/api/accounts_mgmt/v1/subscriptions?search=creator.id%3D'1sDC9c5XHIV6FykHhxfxNJKkhTh'%20and%20status%3D'Stale'"
     headers = {
         "Authorization": f"Bearer {bearer_token}",
         'Content-Type': 'application/json'
     }
-    request_body = '{ "status": "Stale" }'
+    request_body = '{ "status": "Archived" }'
     res = requests.get(url, headers=headers).json()
     if len(res["items"]) > 0:
         requests.patch(url, headers=headers, data=request_body).json()
@@ -138,9 +143,8 @@ def main():
     access_token = get_ocm_token()
 
     client = authenticate(hub_api, hub_token)
-    # update_managedclusters(client, access_token)
-    archive_ocm_stale_clsuters(access_token)
-
+    update_managedclusters(client, access_token)
+    
 
 if __name__ == "__main__":
     sys.exit(main())

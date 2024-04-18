@@ -191,7 +191,7 @@ def update_creds_pull_secret(client):
             }
         }      
         res = v1_secrets.patch(name=cred.metadata.name,namespace=cred.metadata.namespace,body=body)
-        print(res.metadata.managedFields[len(res.metadata.managedFields)-1])
+        print(res.metadata.name, res.metadata.managedFields[len(res.metadata.managedFields)-1], sep='\n')
 
 
 def main():

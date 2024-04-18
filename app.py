@@ -4,6 +4,7 @@ import os
 import sys
 import re
 import json
+import base64
 import requests
 import kubernetes
 from openshift.dynamic import DynamicClient, exceptions
@@ -59,17 +60,18 @@ def update_ocm_displayName(clusterID, infraID, bearer_token):
     print(infraID)
 
     subID = get_ocm_subscription(clusterID,bearer_token)
-    url = "https://api.openshift.com/api/accounts_mgmt/v1/subscriptions/" + subID
-    headers = {
-        "Authorization": f"Bearer {bearer_token}",
-        'Content-Type': 'application/json'
-    }
-    res = requests.get(url, headers=headers).json()
-    # print(re.match('[0-1]_+', res["display_name"]))
-    if re.match('[0-1]_+', res["display_name"]) == None:
-        request_body = '{ "display_name": "0_'+ infraID +'" }'
-        res = requests.patch(url, headers=headers, data=request_body).json()
-        print(res["display_name"])
+    if subID != '':
+        url = "https://api.openshift.com/api/accounts_mgmt/v1/subscriptions/" + subID
+        headers = {
+            "Authorization": f"Bearer {bearer_token}",
+            'Content-Type': 'application/json'
+        }
+        res = requests.get(url, headers=headers).json()
+        # print(re.match('[0-1]_+', res["display_name"]))
+        if re.match('[0-1]_+', res["display_name"]) == None:
+            request_body = '{ "display_name": "0_'+ infraID +'" }'
+            res = requests.patch(url, headers=headers, data=request_body).json()
+            print(res["display_name"])
 
 
 def archive_ocm_stale_clsuters(bearer_token):
@@ -141,6 +143,57 @@ def get_hub_token(file='/var/run/secrets/kubernetes.io/serviceaccount/token'):
     return value
 
 
+def get_credentials(client):
+    """List the credentials with label."""
+
+    try:
+        v1_secrets = client.resources.get(
+            api_version='v1',
+            kind='Secret')
+        secrets = v1_secrets.get(label_selector='cluster.open-cluster-management.io/credentials=')
+    except Exception as e:
+        print("Error getting secrets with credentials label")
+        sys.exit(1)
+
+    # print(secrets.items)
+    return secrets
+
+
+def get_global_pull_secret(client):
+    """Get OCP global pull secret."""
+
+    try:
+        v1_secrets = client.resources.get(
+            api_version='v1',
+            kind='Secret')
+        secrets = v1_secrets.get(name="pull-secret",namespace="openshift-config")
+    except Exception as e:
+        print("Error getting secrets with credentials label")
+        sys.exit(1)
+
+    # print(base64.b64decode(secrets.data[".dockerconfigjson"]))
+    return secrets.data[".dockerconfigjson"] 
+
+
+def update_creds_pull_secret(client):
+    """Update creds pull secret."""
+
+    creds = get_credentials(client)
+    pull_secret = get_global_pull_secret(client)   
+    v1_secrets = client.resources.get(
+        api_version='v1',
+        kind='Secret')
+
+    for cred in creds["items"]:
+        body = {
+            'data': {
+                'pullSecret': '{}'.format(pull_secret),
+            }
+        }      
+        res = v1_secrets.patch(name=cred.metadata.name,namespace=cred.metadata.namespace,body=body)
+        print(res.metadata.managedFields[len(res.metadata.managedFields)-1])
+
+
 def main():
     """Get the token from the enviroment, and query for pods."""
     hub_api = get_env('HOST')
@@ -148,6 +201,7 @@ def main():
     access_token = get_ocm_token()
 
     client = authenticate(hub_api, hub_token)
+    update_creds_pull_secret(client)
     update_managedclusters(client, access_token)
 
 

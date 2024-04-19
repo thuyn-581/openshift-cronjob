@@ -213,7 +213,7 @@ def main():
    
 
     client = authenticate(hub_api, hub_token)
-    # update_creds_pull_secret(client)
+    update_creds_pull_secret(client)
     update_managedclusters(client, access_token)
 
 

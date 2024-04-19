@@ -28,7 +28,8 @@ def authenticate(host, key):
 
 
 def update_managedclusters(client,bearer_token):
-    """List active managed clusters."""
+    """Update ocm subscriptons of managed clusters."""
+
     infra_id=''
     cluster_id=''
     # archive_ocm_stale_clsuters(bearer_token)
@@ -47,17 +48,21 @@ def update_managedclusters(client,bearer_token):
                             infra_id = json.loads(claim["value"])["infraName"]
                         if claim["name"] == "id.openshift.io" :
                             cluster_id = claim["value"]
+                        if claim["name"] == "platform.open-cluster-management.io" :
+                            platform = claim["value"].lower()
+                        if claim["name"] == "region.open-cluster-management.io" :
+                            region = claim["value"]                                                        
                     if infra_id != '' and cluster_id != '':
-                        update_ocm_displayName(cluster_id, infra_id, bearer_token)
+                        update_ocm_displayName(cluster_id, infra_id, platform, region, bearer_token)
     
     except Exception as e:
         print("Error")
         sys.exit(1)
 
 
-def update_ocm_displayName(clusterID, infraID, bearer_token):
-    """Updage ocm display name."""
-    print(infraID)
+def update_ocm_displayName(clusterID, infraID, platform, region, bearer_token):
+    """Updage ocm subscription display name."""
+    print("cluster infraID: {} - platform: {} - region: {}".format(infraID,platform,region))
 
     subID = get_ocm_subscription(clusterID,bearer_token)
     if subID != '':
@@ -69,9 +74,11 @@ def update_ocm_displayName(clusterID, infraID, bearer_token):
         res = requests.get(url, headers=headers).json()
         # print(re.match('[0-1]_+', res["display_name"]))
         if re.match('[0-1]_+', res["display_name"]) == None:
-            request_body = '{ "display_name": "0_'+ infraID +'" }'
+            request_body = '{ "display_name": "0_'+ infraID + '_' + platform + '_' + region + '"}'
             res = requests.patch(url, headers=headers, data=request_body).json()
-            print(res["display_name"])
+            print("ocm subscription display name: {}".format(res["display_name"]))
+        else:
+            print("ocm subscription display name as expected")
 
 
 def archive_ocm_stale_clsuters(bearer_token):
@@ -193,6 +200,8 @@ def update_creds_pull_secret(client):
             }      
             res = v1_secrets.patch(name=cred.metadata.name,namespace=cred.metadata.namespace,body=body)
             print(res.metadata.name, res.metadata.managedFields[len(res.metadata.managedFields)-1], sep='\n')
+        else:
+            print("{} has no pull secret".format(cred.metadata.name))
 
 
 def main():

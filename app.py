@@ -211,7 +211,6 @@ def main():
     hub_token = get_hub_token()
     access_token = get_ocm_token()
    
-
     client = authenticate(hub_api, hub_token)
     update_creds_pull_secret(client)
     update_managedclusters(client, access_token)

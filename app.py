@@ -185,13 +185,14 @@ def update_creds_pull_secret(client):
         kind='Secret')
 
     for cred in creds["items"]:
-        body = {
-            'data': {
-                'pullSecret': '{}'.format(pull_secret),
-            }
-        }      
-        res = v1_secrets.patch(name=cred.metadata.name,namespace=cred.metadata.namespace,body=body)
-        print(res.metadata.name, res.metadata.managedFields[len(res.metadata.managedFields)-1], sep='\n')
+        if cred.data.pullSecret != None:
+            body = {
+                'data': {
+                    'pullSecret': '{}'.format(pull_secret),
+                }
+            }      
+            res = v1_secrets.patch(name=cred.metadata.name,namespace=cred.metadata.namespace,body=body)
+            print(res.metadata.name, res.metadata.managedFields[len(res.metadata.managedFields)-1], sep='\n')
 
 
 def main():

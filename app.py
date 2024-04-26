@@ -76,7 +76,7 @@ def update_ocm_displayName(clusterID, infraID, platform, region, token):
         if re.match('[0-1]_+', res["display_name"]) == None:
             request_body = '{ "display_name": "0_'+ infraID + '_' + platform + '_' + region + '"}'
             post = requests.patch(url, headers=headers, data=request_body).json()
-            print("ocm subscription display name: {}".format(post["display_name"]))
+            print("update ocm subscription display name: {}".format(post["display_name"]))
         else:
             print("ocm subscription display name: {}".format(res["display_name"]))
 
@@ -99,7 +99,7 @@ def archive_ocm_stale_clusters(bearer_token):
 
 def get_ocm_subscription(clusterID,bearer_token):
     subID = ''
-    url = "https://api.openshift.com/api/accounts_mgmt/v1/subscriptions?search=creator.id%3D%271sDC9c5XHIV6FykHhxfxNJKkhTh%27%20and%20status%3D%27Active%27"
+    url = f"https://api.openshift.com/api/accounts_mgmt/v1/subscriptions?search=creator.id%3D%271sDC9c5XHIV6FykHhxfxNJKkhTh%27%20and%20external_cluster_id%3D%27{clusterID}%27"
     headers = {
         "Authorization": f"Bearer {bearer_token}",
         'Content-Type': 'application/json'
@@ -107,8 +107,7 @@ def get_ocm_subscription(clusterID,bearer_token):
     res = requests.get(url, headers=headers).json()
     for item in res["items"]:
         if item["external_cluster_id"] == clusterID:
-            subID = item["id"]
-            # print(item['id'])       
+            subID = item["id"]     
     return subID
 
 
@@ -206,16 +205,14 @@ def update_creds_pull_secret(client):
 
 
 def main():
-    """Get the token from the enviroment, and query for pods."""
     hub_api = get_env('HOST')
     hub_token = get_hub_token()
     access_token = get_ocm_token()
-   
+
     client = authenticate(hub_api, hub_token)
     update_creds_pull_secret(client)
     update_managedclusters(client, access_token)
 
-    
 
 if __name__ == "__main__":
     sys.exit(main())

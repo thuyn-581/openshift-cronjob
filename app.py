@@ -7,7 +7,6 @@ import json
 import base64
 import requests
 import kubernetes 
-from kubernetes import client, config
 from openshift.dynamic import DynamicClient, exceptions
 from kubernetes.client import ApiClient
 

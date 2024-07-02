@@ -14,6 +14,7 @@ from kubernetes.client import ApiClient
 
 def authenticate():
     # Check if code is running in OpenShift
+    print(os.environ)
     if "OPENSHIFT_BUILD_NAME" in os.environ:
         config.load_incluster_config()
         file_namespace = open(

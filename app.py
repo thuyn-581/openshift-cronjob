@@ -13,12 +13,13 @@ from kubernetes.client import ApiClient
 
 
 def authenticate(host):
-    try:
-        config.load_kube_config()
-    except:
-        os.environ['KUBERNETES_SERVICE_HOST'] = 'https://api.o4-ibmvm-02.qe.red-chesterfield.com'
-        os.environ['KUBERNETES_SERVICE_PORT'] = '6443'
-        config.load_incluster_config()
+    # try:
+    #     config.load_kube_config()
+    # except:
+    os.environ['KUBERNETES_SERVICE_HOST'] = 'api.o4-ibmvm-02.qe.red-chesterfield.com'
+    os.environ['KUBERNETES_SERVICE_PORT'] = '6443'
+
+    config.load_incluster_config()
 
     # Create a client config
     k8s_client = config.new_client_from_config()

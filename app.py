@@ -17,6 +17,7 @@ def authenticate(host):
     #     config.load_kube_config()
     #     k8s_client = config.new_client_from_config()
     # except:
+
     # get token
     file_token = open("/run/secrets/kubernetes.io/serviceaccount/token", "r")
     token = file_token.read()
@@ -24,7 +25,7 @@ def authenticate(host):
     # load Kubernetes client config
     k8s_config = kubernetes.client.Configuration()
     k8s_config.host = host
-    k8s_client.verify_ssl = False
+    k8s_config.verify_ssl = False
 
     setattr(k8s_config,
             'api_key',

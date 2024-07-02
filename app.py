@@ -13,18 +13,17 @@ from kubernetes.client import ApiClient
 
 
 def authenticate():
-    config.load_incluster_config()
     # Check if code is running in OpenShift
-    # if "acm-cronjob" in os.environ['HOSTNAME']:
-    #     config.load_incluster_config()
-    #     file_token = open(
-    #         "/run/secrets/kubernetes.io/serviceaccount/token", "r"
-    #     )
-    #     if file_token.mode == "r":
-    #         token = file_token.read()
-    #         print("token: %s\n" %(token))
-    # else:
-    #     config.load_kube_config()    
+    if os.getenv('KUBERNETES_SERVICE_HOST'):
+        config.load_incluster_config()
+        file_token = open(
+            "/run/secrets/kubernetes.io/serviceaccount/token", "r"
+        )
+        if file_token.mode == "r":
+            token = file_token.read()
+            print("token: %s\n" %(token))
+    else:
+        config.load_kube_config()    
 
     # Create a client config
     k8s_client = config.new_client_from_config()

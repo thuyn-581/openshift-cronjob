@@ -13,18 +13,23 @@ from kubernetes.client import ApiClient
 
 
 def authenticate():
-    # Check if code is running in OpenShift
-    print(os.getenv('KUBERNETES_SERVICE_HOST'))
-    if os.getenv('KUBERNETES_SERVICE_HOST'):
+    try:
+        config.load_kube_config()
+    except:
+        # load_kube_config throws if there is no config, but does not document what it throws, so I can't rely on any particular type here
         config.load_incluster_config()
-        file_token = open(
-            "/run/secrets/kubernetes.io/serviceaccount/token", "r"
-        )
-        if file_token.mode == "r":
-            token = file_token.read()
-            print("token: %s\n" %(token))
-    else:
-        config.load_kube_config()    
+
+    # Check if code is running in OpenShift
+    # if os.getenv('KUBERNETES_SERVICE_HOST'):
+    #     config.load_incluster_config()
+    #     file_token = open(
+    #         "/run/secrets/kubernetes.io/serviceaccount/token", "r"
+    #     )
+    #     if file_token.mode == "r":
+    #         token = file_token.read()
+    #         print("token: %s\n" %(token))
+    # else:
+    #     config.load_kube_config()    
 
     # Create a client config
     k8s_client = config.new_client_from_config()

@@ -14,6 +14,7 @@ from kubernetes.client import ApiClient
 
 def authenticate():
     # Check if code is running in OpenShift
+    print(os.getenv('KUBERNETES_SERVICE_HOST'))
     if os.getenv('KUBERNETES_SERVICE_HOST'):
         config.load_incluster_config()
         file_token = open(

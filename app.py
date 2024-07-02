@@ -6,25 +6,44 @@ import re
 import json
 import base64
 import requests
-import kubernetes
+import kubernetes 
+from kubernetes import client, config
 from openshift.dynamic import DynamicClient, exceptions
 from kubernetes.client import ApiClient
 
 
-def authenticate(host, key):
-    """Creates an OpenShift DynamicClient using a Kubernetes client config."""
-    k8s_client = kubernetes.client.Configuration()
+def authenticate():
+    # Check if code is running in OpenShift
+    if "OPENSHIFT_BUILD_NAME" in os.environ:
+        config.load_incluster_config()
+        file_namespace = open(
+            "/run/secrets/kubernetes.io/serviceaccount/namespace", "r"
+        )
+        if file_namespace.mode == "r":
+            namespace = file_namespace.read()
+            print("namespace: %s\n" %(namespace))
+    else:
+        config.load_kube_config()    
 
-    k8s_client.host = host
-    k8s_client.api_key = key
-    k8s_client.verify_ssl = False
+    # Create a client config
+    k8s_client = config.new_client_from_config()
+    dyn_client = DynamicClient(k8s_client)
+    return dyn_client   
+    
 
-    setattr(k8s_client,
-            'api_key',
-            {'authorization': "Bearer {0}".format(k8s_client.api_key)})
+    # """Creates an OpenShift DynamicClient using a Kubernetes client config."""
+    # k8s_client = kubernetes.client.Configuration()
 
-    kubernetes.client.Configuration.set_default(k8s_client)
-    return DynamicClient(kubernetes.client.ApiClient(k8s_client))
+    # k8s_client.host = host
+    # # k8s_client.api_key = key
+    # k8s_client.verify_ssl = False
+
+    # setattr(k8s_client,
+    #         'api_key',
+    #         {'authorization': "Bearer {0}".format(key)})
+
+    # kubernetes.client.Configuration.set_default(k8s_client)
+    # return DynamicClient(kubernetes.client.api_client.ApiClient(k8s_client))
 
 
 def update_managedclusters(client,bearer_token):
@@ -205,11 +224,12 @@ def update_creds_pull_secret(client):
 
 
 def main():
-    hub_api = get_env('HOST')
-    hub_token = get_hub_token()
+    # hub_api = get_env('HOST')
+    # hub_token = get_hub_token()
     access_token = get_ocm_token()
 
-    client = authenticate(hub_api, hub_token)
+    # client = authenticate(hub_api, hub_token)
+    client = authenticate()
     update_creds_pull_secret(client)
     update_managedclusters(client, access_token)
 

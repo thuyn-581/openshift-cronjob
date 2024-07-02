@@ -15,14 +15,14 @@ from kubernetes.client import ApiClient
 def authenticate():
     # Check if code is running in OpenShift
     print(os.environ)
-    if "OPENSHIFT_BUILD_NAME" in os.environ:
+    if "acm-cronjob" in os.environ.HOSTNAME:
         config.load_incluster_config()
-        file_namespace = open(
-            "/run/secrets/kubernetes.io/serviceaccount/namespace", "r"
-        )
-        if file_namespace.mode == "r":
-            namespace = file_namespace.read()
-            print("namespace: %s\n" %(namespace))
+        # file_namespace = open(
+        #     "/run/secrets/kubernetes.io/serviceaccount/namespace", "r"
+        # )
+        # if file_namespace.mode == "r":
+        #     namespace = file_namespace.read()
+        #     print("namespace: %s\n" %(namespace))
     else:
         config.load_kube_config()    
 

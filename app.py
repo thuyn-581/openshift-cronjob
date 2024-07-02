@@ -13,28 +13,15 @@ from kubernetes.client import ApiClient
 
 
 def authenticate(host):
-    # try:
-    #     config.load_kube_config()
-    #     k8s_client = config.new_client_from_config()
-    # except:
-
-    # get token
-    file_token = open("/run/secrets/kubernetes.io/serviceaccount/token", "r")
-    token = file_token.read()
-
-    # load Kubernetes client config
-    k8s_config = kubernetes.client.Configuration()
-    k8s_config.host = host
-    k8s_config.verify_ssl = False
-
-    setattr(k8s_config,
-            'api_key',
-            {'authorization': "Bearer {0}".format(token)})   
-
-    k8s_client = kubernetes.client.api_client.ApiClient(k8s_config)
+    try:
+        config.load_kube_config()
+    except:
+        os.environ['KUBERNETES_SERVICE_HOST'] = 'https://api.o4-ibmvm-02.qe.red-chesterfield.com'
+        os.environ['KUBERNETES_SERVICE_PORT'] = '6443'
+        config.load_incluster_config()
 
     # Create a client config
-    # k8s_client = config.new_client_from_config()
+    k8s_client = config.new_client_from_config()
     dyn_client = DynamicClient(k8s_client)
     return dyn_client   
     

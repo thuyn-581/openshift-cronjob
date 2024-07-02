@@ -12,25 +12,28 @@ from openshift.dynamic import DynamicClient, exceptions
 from kubernetes.client import ApiClient
 
 
-def authenticate():
-    print(os.getenv('KUBERNETES_SERVICE_HOST'))
-    print(os.getenv('KUBERNETES_SERVICE_PORT'))
-    # Check if code is running in OpenShift
-    if os.getenv('KUBERNETES_SERVICE_HOST'):
+def authenticate(host):
+    try:
+        config.load_kube_config()
+        k8s_client = config.new_client_from_config()
+    except:
+        # get token
+        file_token = open("/run/secrets/kubernetes.io/serviceaccount/token", "r")
+        token = file_token.read()
+    
+        # load Kubernetes client config
+        k8s_config = kubernetes.client.Configuration()
+        k8s_config.host = host
+        k8s_client.verify_ssl = False
 
-        # os.environ('KUBERNETES_SERVICE_HOST') = os.getenv('HOST')
-        config.load_incluster_config()
-        # file_token = open(
-        #     "/run/secrets/kubernetes.io/serviceaccount/token", "r"
-        # )
-        # if file_token.mode == "r":
-        #     token = file_token.read()
-        #     print("token: %s\n" %(token))
-    else:
-        config.load_kube_config()    
+        setattr(k8s_config,
+                'api_key',
+                {'authorization': "Bearer {0}".format(token)})   
+
+        k8s_client = kubernetes.client.api_client.ApiClient(k8s_config)
 
     # Create a client config
-    k8s_client = config.new_client_from_config()
+    # k8s_client = config.new_client_from_config()
     dyn_client = DynamicClient(k8s_client)
     return dyn_client   
     
@@ -228,12 +231,12 @@ def update_creds_pull_secret(client):
 
 
 def main():
-    # hub_api = get_env('HOST')
+    hub_api = get_env('HOST')
     # hub_token = get_hub_token()
     access_token = get_ocm_token()
 
     # client = authenticate(hub_api, hub_token)
-    client = authenticate()
+    client = authenticate(hub_api)
     update_creds_pull_secret(client)
     update_managedclusters(client, access_token)
 

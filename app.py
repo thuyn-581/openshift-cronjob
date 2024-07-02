@@ -13,20 +13,20 @@ from kubernetes.client import ApiClient
 
 
 def authenticate(host):
-    try:
-        config.load_kube_config()
-    except:
-        token = open("/run/secrets/kubernetes.io/serviceaccount/namespace", "r").read()
-        k8s_config = kubernetes.client.Configuration()
+    # try:
+    #     config.load_kube_config()
+    # except:
+    token = open("/run/secrets/kubernetes.io/serviceaccount/namespace", "r").read()
+    k8s_config = kubernetes.client.Configuration()
 
-        k8s_config.host = host
-        k8s_config.verify_ssl = False
+    k8s_config.host = host
+    k8s_config.verify_ssl = False
 
-        setattr(k8s_config,
-                'api_key',
-                {'authorization': "Bearer {0}".format(token)})
+    setattr(k8s_config,
+            'api_key',
+            {'authorization': "Bearer {0}".format(token)})
 
-        kubernetes.client.Configuration.set_default(k8s_config)    
+    kubernetes.client.Configuration.set_default(k8s_config)    
 
     # Create a client config
     k8s_client = config.new_client_from_config()

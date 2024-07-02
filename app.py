@@ -30,7 +30,7 @@ def authenticate(host):
 
     # Create a client config
     # k8s_client = config.new_client_from_config()
-    k8s_client = client.api_client.ApiClient(configuration=k8s_config)
+    k8s_client = client.ApiClient(configuration=k8s_config)
     dyn_client = DynamicClient(k8s_client)
     return dyn_client   
     

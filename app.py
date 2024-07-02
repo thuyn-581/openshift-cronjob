@@ -12,7 +12,7 @@ from kubernetes.client import ApiClient
 from kubernetes import client, config
 
 
-def authenticate(host):
+def authenticate():
     try:
         config.load_kube_config()
     except:
@@ -216,12 +216,8 @@ def update_creds_pull_secret(client):
 
 
 def main():
-    hub_api = get_env('HOST')
-    # hub_token = get_hub_token()
     access_token = get_ocm_token()
-
-    # client = authenticate(hub_api, hub_token)
-    client = authenticate(hub_api)
+    client = authenticate()
     update_creds_pull_secret(client)
     update_managedclusters(client, access_token)
 

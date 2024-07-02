@@ -17,12 +17,12 @@ def authenticate():
     print(os.environ['HOSTNAME'])
     if "acm-cronjob" in os.environ['HOSTNAME']:
         config.load_incluster_config()
-        # file_namespace = open(
-        #     "/run/secrets/kubernetes.io/serviceaccount/namespace", "r"
-        # )
-        # if file_namespace.mode == "r":
-        #     namespace = file_namespace.read()
-        #     print("namespace: %s\n" %(namespace))
+        file_token = open(
+            "/run/secrets/kubernetes.io/serviceaccount/token", "r"
+        )
+        if file_token.mode == "r":
+            token = file_token.read()
+            print("token: %s\n" %(token))
     else:
         config.load_kube_config()    
 

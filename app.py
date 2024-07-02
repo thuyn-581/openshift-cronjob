@@ -14,7 +14,7 @@ from kubernetes.client import ApiClient
 
 def authenticate():
     # Check if code is running in OpenShift
-    print(os.environ)
+    print(os.environ['HOSTNAME'])
     if "acm-cronjob" in os.environ['HOSTNAME']:
         config.load_incluster_config()
         # file_namespace = open(

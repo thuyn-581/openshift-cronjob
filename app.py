@@ -87,7 +87,7 @@ def update_ocm_displayName(clusterID, infraID, platform, region, token):
         res = requests.get(url, headers=headers).json()
         # print(re.match('[0-1]_+', res["display_name"]))
         if re.match('[0-1]_+', res["display_name"]) == None:
-            request_body = '{ "display_name": "0_'+ infraID + '_' + platform + '_' + region + '"}'
+            request_body = '{ "display_name": "0.'+ infraID + '.' + platform + '.' + region + '"}'
             post = requests.patch(url, headers=headers, data=request_body).json()
             print("update ocm subscription display name: {}".format(post["display_name"]))
         else:

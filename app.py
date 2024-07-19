@@ -25,19 +25,30 @@ def authenticate():
     return dyn_client   
     
 
-    # """Creates an OpenShift DynamicClient using a Kubernetes client config."""
-    # k8s_client = kubernetes.client.Configuration()
+def update_clusterdeployments(client,bearer_token):
+    """Update ocm subscriptons of hive cluster deployments."""
 
-    # k8s_client.host = host
-    # # k8s_client.api_key = key
-    # k8s_client.verify_ssl = False
+    infra_id = ''
+    cluster_id = ''
+    platform = ''
+    region = 'region'
 
-    # setattr(k8s_client,
-    #         'api_key',
-    #         {'authorization': "Bearer {0}".format(key)})
-
-    # kubernetes.client.Configuration.set_default(k8s_client)
-    # return DynamicClient(kubernetes.client.api_client.ApiClient(k8s_client))
+    try:
+        v1_cds = client.resources.get(
+            api_version='hive.openshift.io/v1',
+            kind='ClusterDeployment')
+        cds = v1_cds.get()["items"]
+        
+        for item in cds:
+            if item["spec"]["installed"] and item["status"]["powerState"] != 'Unknown':
+                infra_id = item["spec"]["clusterMetadata"]["infraID"]
+                cluster_id = item["spec"]["clusterMetadata"]["clusterID"]
+                platform = item["metadata"]["labels"]["hive.openshift.io/cluster-platform"]
+                region = item["metadata"]["labels"]["hive.openshift.io/cluster-region"]
+                update_ocm_displayName(cluster_id, infra_id, platform, region, bearer_token)
+    except Exception as e:
+        print(e)
+        sys.exit(1)
 
 
 def update_managedclusters(client,bearer_token):
@@ -85,8 +96,8 @@ def update_ocm_displayName(clusterID, infraID, platform, region, token):
             'Content-Type': 'application/json'
         }
         res = requests.get(url, headers=headers).json()
-        # print(re.match('[0-1].+', res["display_name"]))
-        if re.match('^[0-1]"."+', res["display_name"]) == None:
+        # print(re.match('[0-1]\\.+', res["display_name"]))
+        if re.match('[0-1]\\.+', res["display_name"]) == None:
             request_body = '{ "display_name": "0.'+ infraID + '.' + platform + '.' + region + '"}'
             post = requests.patch(url, headers=headers, data=request_body).json()
             print("update ocm subscription display name: {}".format(post["display_name"]))
@@ -204,22 +215,25 @@ def update_creds_pull_secret(client):
     if len(creds["items"]) > 0:
         for cred in creds["items"]:
             if cred.data.pullSecret != None:
-                body = {
-                    'data': {
-                        'pullSecret': '{}'.format(pull_secret),
-                    }
-                }      
-                res = v1_secrets.patch(name=cred.metadata.name,namespace=cred.metadata.namespace,body=body)
-                print(res.metadata.name, res.metadata.managedFields[len(res.metadata.managedFields)-1], sep='\n')
+                if cred.data.pullSecret != pull_secret:
+                    body = {
+                        'data': {
+                            'pullSecret': '{}'.format(pull_secret),
+                        }
+                    }      
+                    res = v1_secrets.patch(name=cred.metadata.name,namespace=cred.metadata.namespace,body=body)
+                    print(res.metadata.name, res.metadata.managedFields[len(res.metadata.managedFields)-1], sep='\n')
+                else: 
+                    print("{} pullsecret is good".format(cred.metadata.name))
             else:
-                print("{} has no pull secret".format(cred.metadata.name))
+                print("{} has no pullsecret".format(cred.metadata.name))
 
 
 def main():
     access_token = get_ocm_token()
     client = authenticate()
     update_creds_pull_secret(client)
-    update_managedclusters(client, access_token)
+    update_clusterdeployments(client, access_token)
 
 
 if __name__ == "__main__":

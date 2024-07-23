@@ -25,7 +25,7 @@ def authenticate():
     return dyn_client   
     
 
-def update_clusterdeployments(client,bearer_token):
+def update_managedresources(client,bearer_token):
     """Update ocm subscriptons of hive cluster deployments."""
 
     infra_id = ''
@@ -38,6 +38,11 @@ def update_clusterdeployments(client,bearer_token):
             api_version='hive.openshift.io/v1',
             kind='ClusterDeployment')
         cds = v1_cds.get()["items"]
+
+        v1beta1_hcs = client.resources.get(
+            api_version='hypershift.openshift.io/v1beta1',
+            kind='HostedCluster')
+        hcs = v1beta1_hcs.get()["items"]
         
         for item in cds:
             if item["spec"]["installed"] and item["status"]["powerState"] != 'Unknown':
@@ -46,6 +51,15 @@ def update_clusterdeployments(client,bearer_token):
                 platform = item["metadata"]["labels"]["hive.openshift.io/cluster-platform"]
                 region = item["metadata"]["labels"]["hive.openshift.io/cluster-region"]
                 update_ocm_displayName(cluster_id, infra_id, platform, region, bearer_token)
+
+        for item in hcs:
+            if item["status"]["version"]["history"][0]["state"] == 'Completed':
+                infra_id = item["spec"]["infraID"]
+                cluster_id = item["spec"]["clusterID"]
+                platform = item["spec"]["platform"]["type"].lower()
+                region = "hosted"
+                update_ocm_displayName(cluster_id, infra_id, platform, region, bearer_token)
+
     except Exception as e:
         print(e)
         sys.exit(1)
@@ -233,7 +247,7 @@ def main():
     access_token = get_ocm_token()
     client = authenticate()
     update_creds_pull_secret(client)
-    update_clusterdeployments(client, access_token)
+    update_managedresources(client, access_token)
 
 
 if __name__ == "__main__":

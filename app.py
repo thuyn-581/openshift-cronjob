@@ -8,6 +8,7 @@ import base64
 import requests
 import kubernetes 
 from openshift.dynamic import DynamicClient, exceptions
+from kubernetes.dynamic.exceptions import ResourceNotFoundError
 from kubernetes.client import ApiClient
 from kubernetes import client, config
 
@@ -52,7 +53,7 @@ def update_managedresources(client,bearer_token):
         kind='HostedCluster')
         hcs = v1beta1_hcs.get()["items"]              
     except ResourceNotFoundError as e:
-        print(e)
+        # print(e)
         sys.exit(0)
 
     for item in hcs:

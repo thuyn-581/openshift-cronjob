@@ -32,37 +32,37 @@ def update_managedresources(client,bearer_token):
     cluster_id = ''
     platform = ''
     region = 'region'
-
-    try:
-        v1_cds = client.resources.get(
-            api_version='hive.openshift.io/v1',
-            kind='ClusterDeployment')
-        cds = v1_cds.get()["items"]
-
-        v1beta1_hcs = client.resources.get(
-            api_version='hypershift.openshift.io/v1beta1',
-            kind='HostedCluster')
-        hcs = v1beta1_hcs.get()["items"]
+    
+    v1_cds = client.resources.get(
+        api_version='hive.openshift.io/v1',
+        kind='ClusterDeployment')
+    cds = v1_cds.get()["items"]
         
-        for item in cds:
-            if item["spec"]["installed"] and item["status"]["powerState"] != 'Unknown':
-                infra_id = item["spec"]["clusterMetadata"]["infraID"]
-                cluster_id = item["spec"]["clusterMetadata"]["clusterID"]
-                platform = item["metadata"]["labels"]["hive.openshift.io/cluster-platform"]
-                region = item["metadata"]["labels"]["hive.openshift.io/cluster-region"]
-                update_ocm_displayName(cluster_id, infra_id, platform, region, bearer_token)
+    for item in cds:
+        if item["spec"]["installed"] and item["status"]["powerState"] != 'Unknown':
+            infra_id = item["spec"]["clusterMetadata"]["infraID"]
+            cluster_id = item["spec"]["clusterMetadata"]["clusterID"]
+            platform = item["metadata"]["labels"]["hive.openshift.io/cluster-platform"]
+            region = item["metadata"]["labels"]["hive.openshift.io/cluster-region"]
+            update_ocm_displayName(cluster_id, infra_id, platform, region, bearer_token)
 
-        for item in hcs:
-            if item["status"]["version"]["history"][0]["state"] == 'Completed':
-                infra_id = item["spec"]["infraID"]
-                cluster_id = item["spec"]["clusterID"]
-                platform = item["spec"]["platform"]["type"].lower()
-                region = "hosted"
-                update_ocm_displayName(cluster_id, infra_id, platform, region, bearer_token)
-
-    except Exception as e:
+    try:        
+        v1beta1_hcs = client.resources.get(
+        api_version='hypershift.openshift.io/v1beta1',
+        kind='HostedCluster')
+        hcs = v1beta1_hcs.get()["items"]              
+    except ResourceNotFoundError as e:
         print(e)
-        sys.exit(1)
+        sys.exit(0)
+
+    for item in hcs:
+        if item["status"]["version"]["history"][0]["state"] == 'Completed':
+            infra_id = item["spec"]["infraID"]
+            cluster_id = item["spec"]["clusterID"]
+            platform = item["spec"]["platform"]["type"].lower()
+            region = "hosted"
+            update_ocm_displayName(cluster_id, infra_id, platform, region, bearer_token)
+
 
 
 def update_managedclusters(client,bearer_token):
@@ -111,8 +111,9 @@ def update_ocm_displayName(clusterID, infraID, platform, region, token):
         }
         res = requests.get(url, headers=headers).json()
         # print(re.match('[0-1]\\.+', res["display_name"]))
-        if re.match('[0-1]\\.+', res["display_name"]) == None:
-            request_body = '{ "display_name": "0.'+ infraID + '.' + platform + '.' + region + '"}'
+        # if re.match('[0-1]\\.+', res["display_name"]) == None:
+        if len(res["display_name"].split('.')) < 2:
+            request_body = '{ "display_name": "'+ infraID + '.' + platform + '.' + region + '"}'
             post = requests.patch(url, headers=headers, data=request_body).json()
             print("update ocm subscription display name: {}".format(post["display_name"]))
         else:
@@ -175,16 +176,16 @@ def get_env(var):
     return variable
 
 
-def get_hub_token(file='/var/run/secrets/kubernetes.io/serviceaccount/token'):
-    """Get the ServiceAccount's token."""
-    try:
-        with open(file) as f:
-            value = f.read()
-    except FileNotFoundError as e:
-        print("Failed to load token: {}".format(e))
-        sys.exit(1)
+# def get_hub_token(file='/var/run/secrets/kubernetes.io/serviceaccount/token'):
+#     """Get the ServiceAccount's token."""
+#     try:
+#         with open(file) as f:
+#             value = f.read()
+#     except FileNotFoundError as e:
+#         print("Failed to load token: {}".format(e))
+#         sys.exit(1)
 
-    return value
+#     return value
 
 
 def get_credentials(client):

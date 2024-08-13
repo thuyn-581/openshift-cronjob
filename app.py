@@ -34,11 +34,14 @@ def update_managedresources(client,bearer_token):
     platform = ''
     region = 'region'
     
-    v1_cds = client.resources.get(
-        api_version='hive.openshift.io/v1',
-        kind='ClusterDeployment')
-    cds = v1_cds.get()["items"]
-        
+    try:
+        v1_cds = client.resources.get(
+            api_version='hive.openshift.io/v1',
+            kind='ClusterDeployment')
+        cds = v1_cds.get()["items"]
+    except ResourceNotFoundError as e:
+        # print(e)
+        sys.exit(0)        
     for item in cds:
         if item["spec"]["installed"] and item["status"]["powerState"] != 'Unknown':
             infra_id = item["spec"]["clusterMetadata"]["infraID"]
@@ -55,7 +58,6 @@ def update_managedresources(client,bearer_token):
     except ResourceNotFoundError as e:
         # print(e)
         sys.exit(0)
-
     for item in hcs:
         if item["status"]["version"]["history"][0]["state"] == 'Completed':
             infra_id = item["spec"]["infraID"]
@@ -197,7 +199,7 @@ def get_credentials(client):
             kind='Secret')
         secrets = v1_secrets.get(label_selector='cluster.open-cluster-management.io/credentials=')
     except Exception as e:
-        print("Error getting secrets with credentials label")
+        print(e)
         sys.exit(1)
 
     # print(secrets.items)
@@ -212,7 +214,7 @@ def get_global_pull_secret(client):
             kind='Secret')
         secrets = v1_secrets.get(name="pull-secret",namespace="openshift-config")
     except Exception as e:
-        print("Error getting secrets with credentials label")
+        print(e)
         sys.exit(1)
 
     # print(base64.b64decode(secrets.data[".dockerconfigjson"]))
